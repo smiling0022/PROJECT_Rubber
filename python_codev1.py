@@ -15,6 +15,45 @@ def read_from_arduino():
             print(f"Error reading from Arduino: {e}")
 
 
+def write_to_arduino_PUMP_clockwise():
+    while True:
+        Pump_clockwise = input("Enter command (ON/OFF/exit): ").strip()
+        if Pump_clockwise.lower() == 'exit':
+            print("Exiting...")
+            arduino.close()
+            break
+        elif Pump_clockwise in ["ON", "OFF"]:
+            arduino.write(f"{Pump_clockwise}\n".encode('utf-8'))
+        else:
+            print("Invalid command. Please enter ON, OFF, or exit.")
+
+
+def write_to_arduino_STEP_clockwise():
+    while True:
+        clockwise = input("Enter command (ON/OFF/exit): ").strip()
+        if clockwise.lower() == 'exit':
+            print("Exiting...")
+            arduino.close()
+            break
+        elif clockwise in ["ON", "OFF"]:
+            arduino.write(f"{clockwise}\n".encode('utf-8'))
+        else:
+            print("Invalid command. Please enter ON, OFF, or exit.")
+
+
+def write_to_arduino_STEP_counterclockwise():
+    while True:
+        counterclockwise = input("Enter command (ON/OFF/exit): ").strip()
+        if counterclockwise.lower() == 'exit':
+            print("Exiting...")
+            arduino.close()
+            break
+        elif counterclockwise in ["ON", "OFF"]:
+            arduino.write(f"{counterclockwise}\n".encode('utf-8'))
+        else:
+            print("Invalid command. Please enter ON, OFF, or exit.")
+
+
 def write_to_arduino_servo():
     while True:
         servo = input("Enter command (ON/OFF/exit): ").strip()
@@ -88,13 +127,13 @@ read_thread = threading.Thread(target=read_from_arduino, daemon=True)
 read_thread.start()
 
 # เรียกใช้งานการส่งคำสั่งใน Thread หลัก
-print("Reading data from Arduino. Press Ctrl+C to stop.")
-try:
-    while True:
-        pass  # รอให้ Thread ทำงาน
-except KeyboardInterrupt:
-    print("\nExiting...")
-    arduino.close()
+# print("Reading data from Arduino. Press Ctrl+C to stop.")
+# try:
+#     while True:
+#         pass  # รอให้ Thread ทำงาน
+# except KeyboardInterrupt:
+#     print("\nExiting...")
+#     arduino.close()
 
     
 # write_to_arduino_Ultrasonic1()
@@ -103,3 +142,6 @@ except KeyboardInterrupt:
 # write_to_arduino_Proximity2()
 # Relay_SolenoidValve()
 # write_to_arduino_servo()
+# write_to_arduino_STEP_clockwise()
+# write_to_arduino_STEP_counterclockwise()
+write_to_arduino_PUMP_clockwise()
