@@ -11,15 +11,15 @@
 #define stepPin A10   //Steping
 #define dirPin A11    //Steping
 
-const int motorPinA = A8;  // กำหนดขา A
-const int motorPinB = A9;  // กำหนดขา B
-const int pwmPin = 42;     // กำหนดขา PWM
+#define motorPinA  46  // กำหนดขา A
+#define motorPinB  47  // กำหนดขา B
+#define pwmPin  42     // กำหนดขา PWM
 
 int threshold = 500;
 bool proximityActive = false;
 
 Servo myservo;
-String servo, PROXIMITY1, PROXIMITY2, Relay, clockwise, counterclockwise, Pump_clockwise;
+String servo, PROXIMITY1, PROXIMITY2, Relay, clockwise, counterclockwise, Pump_clockwise,Pump_counterclockwise;
 
 long duration, distance1, distance2;  // ประกาศตัวแปรเก็บค่าระยะ
 unsigned long previousMillis = 0;
@@ -60,7 +60,9 @@ void loop() {
   //Servo_motor();
   //STEP_clockwise();
   //STEP_counterclockwise();
+  //PUMP_clockwise();
   PUMP_clockwise();
+  //PUMP_counterclockwise();
 }
 
 
@@ -292,28 +294,58 @@ void STEP_counterclockwise() {
 }
 
 void PUMP_clockwise() {
-  if (Serial.available() > 0) {           // ตรวจสอบว่ามีข้อมูลเข้ามาจาก Serial
-    Pump_clockwise = Serial.readStringUntil('\n');  // อ่านคำสั่งจาก Serial จนถึง newline
-    Pump_clockwise.trim();                          // ตัดช่องว่างและ newline ออก
-    
+  if (Serial.available() > 0) {
+    Pump_clockwise = Serial.readStringUntil('\n');  // อ่านคำสั่ง
+    Pump_clockwise.trim();                          // ตัดช่องว่างและ newline
+
+    Serial.print("Received Command: ");
+    Serial.println(Pump_clockwise);  // Debug คำสั่งที่เข้ามา
 
     if (Pump_clockwise == "ON") {
+      motorStatus = 1;  // เปิดมอเตอร์
+      Serial.println("Motor ON");
+    } else if (Pump_clockwise == "OFF") {
+      motorStatus = 0;  // ปิดมอเตอร์
+      Serial.println("Motor OFF");
+    } else {
+      Serial.println("Invalid Command");
+    }
+
+    // ควบคุมมอเตอร์ตามสถานะ
+    if (motorStatus == 1) {
+      digitalWrite(motorPinA, HIGH);  // ขา A HIGH
+      digitalWrite(motorPinB, LOW);   // ขา B LOW
+      analogWrite(pwmPin, 128);       // ความเร็ว PWM
+    } else {
+      digitalWrite(motorPinA, LOW);   // หยุดมอเตอร์
+      digitalWrite(motorPinB, LOW);
+      analogWrite(pwmPin, 0);
+    }
+  }
+  delay(100);  // เลื่อนการทำงานเล็กน้อย
+}
+
+void PUMP_counterclockwise() {
+  if (Serial.available() > 0) {           // ตรวจสอบว่ามีข้อมูลเข้ามาจาก Serial
+    Pump_counterclockwise = Serial.readStringUntil('\n');  // อ่านคำสั่งจาก Serial จนถึง newline
+    Pump_counterclockwise.trim();                          // ตัดช่องว่างและ newline ออก
+    
+
+    if (Pump_counterclockwise == "ON") {
       motorStatus = 1;  // ตั้งค่าสถานะมอเตอร์ให้เป็น ON
       Serial.println("Motor ON");
-      Serial.println("Arduino: "+ motorStatus);
-    } else if (Pump_clockwise == "OFF") {
+    } else if (Pump_counterclockwise == "OFF") {
       motorStatus = 0; // ตั้งค่าสถานะมอเตอร์ให้เป็น OFF
       Serial.println("Motor OFF");
     } else {
       Serial.println("Invalid Command");  // ส่งข้อความเมื่อคำสั่งไม่ถูกต้อง
     }
 
-    // ถ้ามอเตอร์เปิด (ON), ให้หมุนมอเตอร์
-    Serial.println("Arduino: "+motorStatus);
+
 
     if (motorStatus == 1) {
-      digitalWrite(motorPinA, HIGH);  // ขา A HIGH
-      digitalWrite(motorPinB, LOW);   // ขา B LOW
+      digitalWrite(motorPinA, LOW);  // ขา A HIGH
+      digitalWrite(motorPinB, HIGH);   // ขา B LOW
       analogWrite(pwmPin, 128);       // กำหนดความเร็ว PWM (ค่า 0-255)
     } else {
       // ถ้ามอเตอร์ปิด (OFF), ให้หยุดการหมุน
@@ -324,3 +356,5 @@ void PUMP_clockwise() {
   }
   delay(100); // เลื่อนการทำงานของ loop ให้มีความช้าลงเล็กน้อย
 }
+
+

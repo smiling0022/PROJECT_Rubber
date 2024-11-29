@@ -27,6 +27,18 @@ def write_to_arduino_PUMP_clockwise():
         else:
             print("Invalid command. Please enter ON, OFF, or exit.")
 
+def write_to_arduino_PUMP_counterclockwise():
+    while True:
+        PUMP_counterclockwise = input("Enter command (ON/OFF/exit): ").strip()
+        if PUMP_counterclockwise.lower() == 'exit':
+            print("Exiting...")
+            arduino.close()
+            break
+        elif PUMP_counterclockwise in ["ON", "OFF"]:
+            arduino.write(f"{PUMP_counterclockwise}\n".encode('utf-8'))
+        else:
+            print("Invalid command. Please enter ON, OFF, or exit.")
+
 
 def write_to_arduino_STEP_clockwise():
     while True:
@@ -144,4 +156,6 @@ read_thread.start()
 # write_to_arduino_servo()
 # write_to_arduino_STEP_clockwise()
 # write_to_arduino_STEP_counterclockwise()
-write_to_arduino_PUMP_clockwise()
+# write_to_arduino_PUMP_clockwise()
+# write_to_arduino_PUMP_counterclockwise()
+
