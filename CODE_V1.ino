@@ -1,25 +1,51 @@
 #include <Arduino.h>
 #include <Servo.h>
+#include <Encoder.h>
+
 #define PROXIMITY1_PIN 6
 #define PROXIMITY2_PIN 7
 #define TRIG_PIN1 5  // ขาที่เชื่อมต่อกับขา Trig ของ HC-SR04
 #define ECHO_PIN1 9  // ขาที่เชื่อมต่อกับขา Echo ของ HC-SR04
 #define TRIG_PIN2 4  // ขาที่เชื่อมต่อกับขา Trig ของ HC-SR04
 #define ECHO_PIN2 8  // ขาที่เชื่อมต่อกับขา Echo ของ HC-SR04
+
+
 #define relayPin 32
 
-#define stepPin A10   //Steping
-#define dirPin A11    //Steping
+#define mortorD A0  //มอเตอร์เทส
+#define mortorP A1
 
-#define motorPinA  46  // กำหนดขา A
-#define motorPinB  47  // กำหนดขา B
-#define pwmPin  42     // กำหนดขา PWM
+#define dirPin A11  //Steping
+
+#define stepPin A10  //Steping
+#define dirPin A11   //Steping
+
+#define motorPinA 46  // กำหนดขา A
+#define motorPinB 47  // กำหนดขา B
+#define pwmPin 42     // กำหนดขา PWM
+
+// ตั้งค่าพินเอ็นโค้ดเดอร์
+#define encoder1PinA 26
+#define encoder1PinB 27
+
+#define encoder2PinA 26 //อย่าลืมเปลี่ยนขา
+#define encoder2PinB 27 //อย่าลืมเปลี่ยนขา
+
+// ตั้งค่าพินมอเตอร์
+#define motorEN1PWM 44
+#define motorEN1DirA 43
+#define motorEN1DirB 42
+
+#define motorEN2PWM 44  //อย่าลืมเปลี่ยนขา
+#define motorEN2DirA 43 //อย่าลืมเปลี่ยนขา
+#define motorEN2DirB 42 //อย่าลืมเปลี่ยนขา
 
 int threshold = 500;
 bool proximityActive = false;
 
 Servo myservo;
-String servo, PROXIMITY1, PROXIMITY2, Relay, clockwise, counterclockwise, Pump_clockwise,Pump_counterclockwise;
+String servo, PROXIMITY1, PROXIMITY2, Relay, clockwise, counterclockwise, Pump_clockwise, Pump_counterclockwise, mortor_clockwise, mortor_EN1_clockwise, mortor_EN1_counterclockwise,mortor_EN2_clockwise,
+mortor_EN2_counterclockwise;
 
 long duration, distance1, distance2;  // ประกาศตัวแปรเก็บค่าระยะ
 unsigned long previousMillis = 0;
@@ -28,6 +54,11 @@ int stepsPerSecond = 1000;  // กำหนดจำนวนสเต็ปต�
 bool isMoving = false;      // ตัวแปรเพื่อตรวจสอบสถานะการหมุนของมอเตอร์
 int motorStatus = 0;
 
+Encoder encoder1(encoder1PinA, encoder1PinB);
+Encoder encoder2(encoder2PinA, encoder2PinB);
+
+
+long oldPosition = -999;
 
 void setup() {
 
@@ -48,28 +79,29 @@ void setup() {
   pinMode(pwmPin, OUTPUT);
   pinMode(stepPin, OUTPUT);
   pinMode(dirPin, OUTPUT);
+
+  pinMode(motorEN1PWM, OUTPUT);
+  pinMode(motorEN1DirA, OUTPUT);
+  pinMode(motorEN1DirB, OUTPUT);
 }
 
 void loop() {
-  //Servo_motor();  // เรียกใช้งานฟังก์ชัน Servo_motor
+  // Servo_motor();  // เรียกใช้งานฟังก์ชัน Servo_motor
   // Proximity_sensor_1();
   // Proximity_sensor_2();
   // Ultrasonic_1();
   // Ultrasonic_2();
   //Relay_SolenoidValve();
-  //Servo_motor();
+  // Servo_motor();
   //STEP_clockwise();
   //STEP_counterclockwise();
+  // PUMP_clockwise();
   //PUMP_clockwise();
-  PUMP_clockwise();
-  //PUMP_counterclockwise();
+  //Mortor_clockwise();
+ MortorEN1_clockwise();
 }
 
-
-
-
 //---------------------------INPUT------------------------------------
-
 
 void Proximity_sensor_1() {
   if (proximityActive) {
@@ -106,7 +138,6 @@ void Proximity_sensor_1() {
   delay(200);  // หน่วงเวลาเพื่อความเสถียร
 }
 
-
 void Proximity_sensor_2() {
   if (proximityActive) {
     Proximity_sensor_2();
@@ -141,7 +172,6 @@ void Proximity_sensor_2() {
 
   delay(200);  // หน่วงเวลาเพื่อความเสถียร
 }
-
 
 void Ultrasonic_1() {
   unsigned long currentMillis = millis();
@@ -189,10 +219,7 @@ void Ultrasonic_2() {
   }
 }
 
-
-
 //--------------------------- OUTPUT------------------------------------
-
 
 void Servo_motor() {
   if (Serial.available() > 0) {            // ตรวจสอบว่ามีข้อมูลเข้ามา
@@ -232,7 +259,6 @@ void Relay_SolenoidValve() {
   delay(100);
 }
 
-
 void STEP_clockwise() {
   if (Serial.available() > 0) {                       // ตรวจสอบว่ามีข้อมูลเข้ามาจาก Serial
     String clockwise = Serial.readStringUntil('\n');  // อ่านข้อมูลจนถึง newline
@@ -261,8 +287,6 @@ void STEP_clockwise() {
   }
   delay(100);
 }
-
-
 
 void STEP_counterclockwise() {
   if (Serial.available() > 0) {                       // ตรวจสอบว่ามีข้อมูลเข้ามาจาก Serial
@@ -317,7 +341,7 @@ void PUMP_clockwise() {
       digitalWrite(motorPinB, LOW);   // ขา B LOW
       analogWrite(pwmPin, 128);       // ความเร็ว PWM
     } else {
-      digitalWrite(motorPinA, LOW);   // หยุดมอเตอร์
+      digitalWrite(motorPinA, LOW);  // หยุดมอเตอร์
       digitalWrite(motorPinB, LOW);
       analogWrite(pwmPin, 0);
     }
@@ -326,35 +350,213 @@ void PUMP_clockwise() {
 }
 
 void PUMP_counterclockwise() {
-  if (Serial.available() > 0) {           // ตรวจสอบว่ามีข้อมูลเข้ามาจาก Serial
+  if (Serial.available() > 0) {                            // ตรวจสอบว่ามีข้อมูลเข้ามาจาก Serial
     Pump_counterclockwise = Serial.readStringUntil('\n');  // อ่านคำสั่งจาก Serial จนถึง newline
     Pump_counterclockwise.trim();                          // ตัดช่องว่างและ newline ออก
-    
 
     if (Pump_counterclockwise == "ON") {
       motorStatus = 1;  // ตั้งค่าสถานะมอเตอร์ให้เป็น ON
       Serial.println("Motor ON");
     } else if (Pump_counterclockwise == "OFF") {
-      motorStatus = 0; // ตั้งค่าสถานะมอเตอร์ให้เป็น OFF
+      motorStatus = 0;  // ตั้งค่าสถานะมอเตอร์ให้เป็น OFF
       Serial.println("Motor OFF");
     } else {
       Serial.println("Invalid Command");  // ส่งข้อความเมื่อคำสั่งไม่ถูกต้อง
     }
 
-
-
     if (motorStatus == 1) {
-      digitalWrite(motorPinA, LOW);  // ขา A HIGH
-      digitalWrite(motorPinB, HIGH);   // ขา B LOW
+      digitalWrite(motorPinA, LOW);   // ขา A HIGH
+      digitalWrite(motorPinB, HIGH);  // ขา B LOW
       analogWrite(pwmPin, 128);       // กำหนดความเร็ว PWM (ค่า 0-255)
     } else {
       // ถ้ามอเตอร์ปิด (OFF), ให้หยุดการหมุน
-      digitalWrite(motorPinA, LOW);   // ขา A LOW
-      digitalWrite(motorPinB, LOW);   // ขา B LOW
-      analogWrite(pwmPin, 0);         // หยุดการหมุน
+      digitalWrite(motorPinA, LOW);  // ขา A LOW
+      digitalWrite(motorPinB, LOW);  // ขา B LOW
+      analogWrite(pwmPin, 0);        // หยุดการหมุน
     }
   }
-  delay(100); // เลื่อนการทำงานของ loop ให้มีความช้าลงเล็กน้อย
+  delay(100);  // เลื่อนการทำงานของ loop ให้มีความช้าลงเล็กน้อย
 }
 
+
+// มอเตอร์เอ็นโค้ตเดอร์
+void MortorEN1_clockwise(){
+  // เช็คคำสั่งจาก Serial Monitor
+  if (Serial.available() > 0) {
+    mortor_EN1_clockwise = Serial.readStringUntil('\n');  // อ่านคำสั่ง
+    mortor_EN1_clockwise.trim();                          // ตัดช่องว่างและ newline
+
+    Serial.print("Received Command: ");
+    Serial.println(mortor_EN1_clockwise);  // Debug คำสั่งที่เข้าม
+
+    // กำหนดสถานะมอเตอร์ตามคำสั่ง
+    if (mortor_EN1_clockwise == "ON") {
+      motorStatus = 1;  // เปิดมอเตอร์
+      Serial.println("Motor ON");
+    } else if (mortor_EN1_clockwise == "OFF") {
+      motorStatus = 0;  // ปิดมอเตอร์
+      Serial.println("Motor OFF");
+    } else {
+      Serial.println("Invalid Command");
+    }
+  }
+
+  // ควบคุมมอเตอร์ตามสถานะ
+  if (motorStatus == 1) {
+    digitalWrite(motorEN1DirA, HIGH);
+    digitalWrite(motorEN1DirB, LOW);
+    analogWrite(motorEN1PWM, 150);  // กำหนดความเร็ว (0-255)
+
+    // อัพเดตตำแหน่งของเอ็นโค้ดเดอร์ตลอดเวลา
+    // long newPosition = myEncoder.read();
+
+    // if (newPosition != oldPosition) {
+    //   oldPosition = newPosition;
+    //   Serial.print("Position: ");
+    //   Serial.println(newPosition);  // แสดงตำแหน่งที่อัปเดต
+    // }
+
+  } else {
+    digitalWrite(motorEN1DirA, LOW);
+    digitalWrite(motorEN1DirB, LOW);
+    analogWrite(motorEN1PWM, 0);  // ปิดมอเตอร์
+  }
+
+  delay(100);  // เลื่อนการทำงานเล็กน้อย (ปรับเวลาให้เหมาะสมตามต้องการ)
+}
+
+void MortorEN1_counterclockwise(){
+  // เช็คคำสั่งจาก Serial Monitor
+  if (Serial.available() > 0) {
+    mortor_EN1_counterclockwise = Serial.readStringUntil('\n');  // อ่านคำสั่ง
+    mortor_EN1_counterclockwise.trim();                          // ตัดช่องว่างและ newline
+
+    Serial.print("Received Command: ");
+    Serial.println(mortor_EN1_counterclockwise);  // Debug คำสั่งที่เข้าม
+
+    // กำหนดสถานะมอเตอร์ตามคำสั่ง
+    if (mortor_EN1_counterclockwise == "ON") {
+      motorStatus = 1;  // เปิดมอเตอร์
+      Serial.println("Motor ON");
+    } else if (mortor_EN1_counterclockwise == "OFF") {
+      motorStatus = 0;  // ปิดมอเตอร์
+      Serial.println("Motor OFF");
+    } else {
+      Serial.println("Invalid Command");
+    }
+  }
+
+  // ควบคุมมอเตอร์ตามสถานะ
+  if (motorStatus == 1) {
+    digitalWrite(motorEN1DirA, LOW);
+    digitalWrite(motorEN1DirB, HIGH);
+    analogWrite(motorEN1PWM, 150);  // กำหนดความเร็ว (0-255)
+
+    // อัพเดตตำแหน่งของเอ็นโค้ดเดอร์ตลอดเวลา
+    // long newPosition = myEncoder.read();
+
+    // if (newPosition != oldPosition) {
+    //   oldPosition = newPosition;
+    //   Serial.print("Position: ");
+    //   Serial.println(newPosition);  // แสดงตำแหน่งที่อัปเดต
+    // }
+
+  } else {
+    digitalWrite(motorEN1DirA, LOW);
+    digitalWrite(motorEN1DirB, LOW);
+    analogWrite(motorEN1PWM, 0);  // ปิดมอเตอร์
+  }
+
+  delay(100);  // เลื่อนการทำงานเล็กน้อย (ปรับเวลาให้เหมาะสมตามต้องการ)
+}
+
+void MortorEN2_clockwise(){
+  // เช็คคำสั่งจาก Serial Monitor
+  if (Serial.available() > 0) {
+    mortor_EN2_clockwise = Serial.readStringUntil('\n');  // อ่านคำสั่ง
+    mortor_EN2_clockwise.trim();                          // ตัดช่องว่างและ newline
+
+    Serial.print("Received Command: ");
+    Serial.println(mortor_EN2_clockwise);  // Debug คำสั่งที่เข้าม
+
+    // กำหนดสถานะมอเตอร์ตามคำสั่ง
+    if (mortor_EN2_clockwise == "ON") {
+      motorStatus = 1;  // เปิดมอเตอร์
+      Serial.println("Motor ON");
+    } else if (mortor_EN2_clockwise == "OFF") {
+      motorStatus = 0;  // ปิดมอเตอร์
+      Serial.println("Motor OFF");
+    } else {
+      Serial.println("Invalid Command");
+    }
+  }
+
+  // ควบคุมมอเตอร์ตามสถานะ
+  if (motorStatus == 1) {
+    digitalWrite(motorEN2DirA, HIGH);
+    digitalWrite(motorEN2DirB, LOW);
+    analogWrite(motorEN2PWM, 150);  // กำหนดความเร็ว (0-255)
+
+    // อัพเดตตำแหน่งของเอ็นโค้ดเดอร์ตลอดเวลา
+    // long newPosition = myEncoder.read();
+
+    // if (newPosition != oldPosition) {
+    //   oldPosition = newPosition;
+    //   Serial.print("Position: ");
+    //   Serial.println(newPosition);  // แสดงตำแหน่งที่อัปเดต
+    // }
+
+  } else {
+    digitalWrite(motorEN2DirA, LOW);
+    digitalWrite(motorEN2DirB, LOW);
+    analogWrite(motorEN2PWM, 0);  // ปิดมอเตอร์
+  }
+
+  delay(100);  // เลื่อนการทำงานเล็กน้อย (ปรับเวลาให้เหมาะสมตามต้องการ)
+}
+
+void MortorEN2_counterclockwise(){
+  // เช็คคำสั่งจาก Serial Monitor
+  if (Serial.available() > 0) {
+    mortor_EN2_counterclockwise = Serial.readStringUntil('\n');  // อ่านคำสั่ง
+    mortor_EN2_counterclockwise.trim();                          // ตัดช่องว่างและ newline
+
+    Serial.print("Received Command: ");
+    Serial.println(mortor_EN2_counterclockwise);  // Debug คำสั่งที่เข้าม
+
+    // กำหนดสถานะมอเตอร์ตามคำสั่ง
+    if (mortor_EN2_counterclockwise == "ON") {
+      motorStatus = 1;  // เปิดมอเตอร์
+      Serial.println("Motor ON");
+    } else if (mortor_EN2_counterclockwise == "OFF") {
+      motorStatus = 0;  // ปิดมอเตอร์
+      Serial.println("Motor OFF");
+    } else {
+      Serial.println("Invalid Command");
+    }
+  }
+
+  // ควบคุมมอเตอร์ตามสถานะ
+  if (motorStatus == 1) {
+    digitalWrite(motorEN2DirA, LOW);
+    digitalWrite(motorEN2DirB, HIGH);
+    analogWrite(motorEN2PWM, 150);  // กำหนดความเร็ว (0-255)
+
+    // อัพเดตตำแหน่งของเอ็นโค้ดเดอร์ตลอดเวลา
+    // long newPosition = myEncoder.read();
+
+    // if (newPosition != oldPosition) {
+    //   oldPosition = newPosition;
+    //   Serial.print("Position: ");
+    //   Serial.println(newPosition);  // แสดงตำแหน่งที่อัปเดต
+    // }
+
+  } else {
+    digitalWrite(motorEN2DirA, LOW);
+    digitalWrite(motorEN2DirB, LOW);
+    analogWrite(motorEN2PWM, 0);  // ปิดมอเตอร์
+  }
+
+  delay(100);  // เลื่อนการทำงานเล็กน้อย (ปรับเวลาให้เหมาะสมตามต้องการ)
+}
 
