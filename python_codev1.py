@@ -139,7 +139,7 @@ def write_to_arduino_Ultrasonic2():
         except Exception as e:
             print(f"Error reading from Arduino: {e}")
 
-# มอเตอร์เอ็นโค้ตเดอร์1
+# มอเตอร์เอ็นโค้ตเดอร์1 ตามเข็ม
 def write_to_arduino_mortor_EN1_clockwise():
     while True:
         mortor_EN1_clockwise = input("Enter command (ON/OFF/exit): ").strip()
@@ -152,6 +152,7 @@ def write_to_arduino_mortor_EN1_clockwise():
         else:
             print("Invalid command. Please enter ON, OFF, or exit.")
 
+# มอเตอร์เอ็นโค้ตเดอร์1 ทวนเข็ม
 def write_to_arduino_mortor_EN1_counterclockwise():
     while True:
         mortor_EN1_counterclockwise = input("Enter command (ON/OFF/exit): ").strip()
@@ -164,7 +165,7 @@ def write_to_arduino_mortor_EN1_counterclockwise():
         else:
             print("Invalid command. Please enter ON, OFF, or exit.")
 
-# มอเตอร์เอ็นโค้ตเดอร์2
+# มอเตอร์เอ็นโค้ตเดอร์2 ตามเข็ม
 def write_to_arduino_mortor_EN2_clockwise():
     while True:
         mortor_EN2_clockwise = input("Enter command (ON/OFF/exit): ").strip()
@@ -177,6 +178,7 @@ def write_to_arduino_mortor_EN2_clockwise():
         else:
             print("Invalid command. Please enter ON, OFF, or exit.")
 
+# มอเตอร์เอ็นโค้ตเดอร์2 ทวนเข็ม
 def write_to_arduino_mortor_EN2_counterclockwise():
     while True:
         mortor_EN2_counterclockwise = input("Enter command (ON/OFF/exit): ").strip()
@@ -188,6 +190,58 @@ def write_to_arduino_mortor_EN2_counterclockwise():
             arduino.write(f"{ mortor_EN2_counterclockwise}\n".encode('utf-8'))
         else:
             print("Invalid command. Please enter ON, OFF, or exit.")
+
+# มอเตอร์ปัดน้ำฝน1 ตามเข็ม
+def write_to_arduino_mortor_Brake1_clockwise():
+    while True:
+        mortor_brake1_clockwise = input("Enter command (ON/OFF/exit): ").strip()
+        if mortor_brake1_clockwise.lower() == 'exit':
+            print("Exiting...")
+            arduino.close()
+            break
+        elif mortor_brake1_clockwise in ["ON", "OFF"]:
+            arduino.write(f"{mortor_brake1_clockwise}\n".encode('utf-8'))
+        else:
+            print("Invalid command. Please enter ON, OFF, or exit.")
+
+# มอเตอร์ปัดน้ำฝน1 ทวนเข็ม
+def write_to_arduino_mortor_Brake1_counterclockwise():
+    while True:
+        mortor_brake1_counterclockwise = input("Enter command (ON/OFF/exit): ").strip()
+        if mortor_brake1_counterclockwise.lower() == 'exit':
+            print("Exiting...")
+            arduino.close()
+            break
+        elif mortor_brake1_counterclockwise in ["ON", "OFF"]:
+            arduino.write(f"{mortor_brake1_counterclockwise}\n".encode('utf-8'))
+        else:
+            print("Invalid command. Please enter ON, OFF, or exit.")
+
+# มอเตอร์ปัดน้ำฝน2 ตามเข็ม
+def write_to_arduino_mortor_Brake2_clockwise():
+    while True:
+        mortor_brake2_clockwise = input("Enter command (ON/OFF/exit): ").strip()
+        if mortor_brake2_clockwise.lower() == 'exit':
+            print("Exiting...")
+            arduino.close()
+            break
+        elif mortor_brake2_clockwise in ["ON", "OFF"]:
+            arduino.write(f"{mortor_brake2_clockwise}\n".encode('utf-8'))
+        else:
+            print("Invalid command. Please enter ON, OFF, or exit.")
+# มอเตอร์ปัดน้ำฝน2 ทวนเข็ม
+def write_to_arduino_mortor_Brake2_counterclockwise():
+    while True:
+        mortor_brake2_counterclockwise = input("Enter command (ON/OFF/exit): ").strip()
+        if mortor_brake2_counterclockwise.lower() == 'exit':
+            print("Exiting...")
+            arduino.close()
+            break
+        elif mortor_brake2_counterclockwise in ["ON", "OFF"]:
+            arduino.write(f"{mortor_brake2_counterclockwise}\n".encode('utf-8'))
+        else:
+            print("Invalid command. Please enter ON, OFF, or exit.")
+
 
 # สร้าง Thread สำหรับการอ่านข้อมูล
 read_thread = threading.Thread(target=read_from_arduino, daemon=True)
@@ -215,5 +269,10 @@ read_thread.start()
 # write_to_arduino_PUMP_clockwise()
 # write_to_arduino_PUMP_counterclockwise()
 # write_to_arduino_mortor_EN1_clockwise()
-write_to_arduino_mortor_EN1_counterclockwise()
+# write_to_arduino_mortor_EN1_counterclockwise()
+# write_to_arduino_mortor_Brake1_clockwise()
+# write_to_arduino_mortor_Brake1_counterclockwise()
+# write_to_arduino_mortor_Brake2_clockwise()
+write_to_arduino_mortor_Brake2_counterclockwise()
+
 
